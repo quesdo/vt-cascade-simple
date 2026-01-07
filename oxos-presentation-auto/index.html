@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OXOS Virtual Twin Presentation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Stars background -->
+    <div class="stars-container" id="stars"></div>
+
+    <!-- Main content container -->
+    <div class="presentation-container">
+        <!-- Text content area -->
+        <div class="text-content" id="textContent">
+            <p class="slide-text"></p>
+        </div>
+
+        <!-- Navigation button -->
+        <button class="next-btn" id="nextBtn">
+            <span class="btn-text">Start Presentation</span>
+            <span class="btn-icon">→</span>
+        </button>
+
+        <!-- Progress indicator -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressText">0 / 6</div>
+        </div>
+    </div>
+
+    <!-- SDK Integration (hidden iframe communication) -->
+    <script src="app.js"></script>
+</body>
+</html>
