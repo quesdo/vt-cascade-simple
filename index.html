@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Twin Cascade - Simple</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Canvas for drawing connections -->
+    <canvas id="connectionCanvas"></canvas>
+
+    <!-- Virtual Twins (VT) Images -->
+    <div class="vt-container">
+        <div class="vt" id="vt-product" data-vt="product">
+            <img src="Product VT.png" alt="Product Digital Twin">
+        </div>
+
+        <div class="vt" id="vt-production" data-vt="production">
+            <img src="Production systems VT.png" alt="Production Systems Digital Twin">
+        </div>
+
+        <div class="vt" id="vt-supply" data-vt="supply">
+            <img src="Supply VT.png" alt="Supply Chain Digital Twin">
+        </div>
+    </div>
+
+    <!-- Hidden event buttons (for programmatic control) -->
+    <div class="event-buttons" style="display: none;">
+        <button class="event-btn" id="btn-tarif" data-event="tarif">
+            🚨 Increase of Tariffs +25%
+        </button>
+        <button class="event-btn" id="btn-labor" data-event="labor">
+            🚨 Labor Shortage Crisis
+        </button>
+        <button class="event-btn" id="btn-material" data-event="material">
+            🚨 Material Change Required
+        </button>
+    </div>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
