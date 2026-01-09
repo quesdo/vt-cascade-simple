@@ -317,10 +317,10 @@ function triggerStepLocal() {
         // SDK: Show Issue, Hide Working when problem arrives
         showIssue(step.vt);
 
-        // Auto-show message after line animation completes
-        setTimeout(() => {
-            showMessage(step.vt);
-        }, 500);
+        // No popup - just continue automatically after a short delay
+        setTimeout(async () => {
+            await showResolution();
+        }, 2000);
     });
 }
 
@@ -377,58 +377,23 @@ async function showResolution() {
 
 function showResolutionLocal() {
     const step = currentScenario.chain[currentStep];
-    const popup = document.getElementById('messagePopup');
-    const icon = popup.querySelector('.message-icon');
-    const title = popup.querySelector('.message-title');
-    const content = popup.querySelector('.message-content');
-    const btn = document.getElementById('resolveBtn');
-
-    // Update to show resolution
-    icon.textContent = '✅';
-    title.textContent = 'DIGITAL TWIN RESOLVING';
-
-    // Show the solution
-    let solutionContent = '✅ SOLUTION APPLIED:\n' + step.solution;
-
-    // Add final message if it exists
-    if (step.final) {
-        solutionContent += '\n\n' + step.final;
-    }
-
-    content.textContent = solutionContent;
 
     // Mark VT as resolved
     resolveAndContinue();
 
-    // Show continue button
-    btn.style.display = 'block';
+    // No popup - continue automatically
     const isLastStep = currentStep >= currentScenario.chain.length - 1;
-    btn.textContent = isLastStep ? 'Complete Crisis Resolution ✓' : 'Continue to Next Impact →';
 
-    // Set button action and auto-progress
-    if (isLastStep) {
-        const completeAction = async () => {
-            stopAutoProgress();
-            popup.classList.remove('show');
-            setTimeout(async () => {
-                await showSuccessScreen();
-            }, 500);
-        };
-        btn.onclick = completeAction;
-        // 6 seconds to read solution (4s × 1.5)
-        startAutoProgress(6000, completeAction);
-    } else {
-        const continueAction = async () => {
-            stopAutoProgress();
-            popup.classList.remove('show');
-            await new Promise(resolve => setTimeout(resolve, 500));
+    setTimeout(async () => {
+        if (isLastStep) {
+            // End of scenario - show success briefly then reset
+            await showSuccessScreen();
+        } else {
+            // Continue to next step
             currentStep++;
             await triggerStep();
-        };
-        btn.onclick = continueAction;
-        // 6 seconds to read solution (4s × 1.5)
-        startAutoProgress(6000, continueAction);
-    }
+        }
+    }, 2000);
 }
 
 // For spectators to sync
@@ -465,17 +430,15 @@ async function showSuccessScreen() {
 }
 
 function showSuccessScreenLocal() {
-    const overlay = document.getElementById('successOverlay');
-    const message = overlay.querySelector('.success-message');
-
-    message.textContent = `All impacts resolved through Digital Twin collaboration!\n\n${currentScenario.name} successfully managed with minimal disruption.`;
-
-    overlay.classList.add('show');
-
-    // SDK: Hide "Web Cascade" and show "Web Univers" when success screen appears
+    // No overlay - just trigger SDK visibility changes and auto-reset
     toggleVisibility("Web Cascade", false);
     toggleVisibility("Web Univers", true);
-    console.log("Success screen shown - Web Cascade hidden, Web Univers displayed");
+    console.log("Success - Web Cascade hidden, Web Univers displayed");
+
+    // Auto-reset after 2 seconds
+    setTimeout(async () => {
+        await resetSystem();
+    }, 2000);
 }
 
 // For spectators to sync
@@ -491,12 +454,6 @@ async function resetSystem() {
 }
 
 function resetSystemLocal() {
-    // Clear any existing auto-progress
-    stopAutoProgress();
-
-    // Hide success overlay
-    document.getElementById('successOverlay').classList.remove('show');
-
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
