@@ -285,22 +285,35 @@ function triggerStepLocal() {
     const step = currentScenario.chain[currentStep];
     const targetVT = document.getElementById(`vt-${step.vt}`);
 
-    // Find source position (button or previous VT)
+    if (!targetVT) {
+        console.error('Target VT not found:', step.vt);
+        return;
+    }
+
+    // Find source position
     let sourcePos;
     if (currentStep === 0) {
-        // From the button that was clicked
-        sourcePos = getElementCenter(clickedButton);
+        // First step - start from center of screen
+        sourcePos = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+        };
     } else {
         // From previous VT
         const prevStep = currentScenario.chain[currentStep - 1];
         const prevVT = document.getElementById(`vt-${prevStep.vt}`);
+        if (!prevVT) {
+            console.error('Previous VT not found:', prevStep.vt);
+            return;
+        }
         sourcePos = getElementCenter(prevVT);
     }
 
     const targetPos = getElementCenter(targetVT);
 
+    console.log(`Drawing line from`, sourcePos, `to`, targetPos, `for step`, currentStep);
+
     // Draw animated connection and store it
-    const lineIndex = drawnLines.length;
     const lineData = {
         start: sourcePos,
         end: targetPos,
@@ -316,6 +329,8 @@ function triggerStepLocal() {
 
         // SDK: Show Issue, Hide Working when problem arrives
         showIssue(step.vt);
+
+        console.log(`Line animation completed for step ${currentStep}`);
 
         // No popup - just continue automatically after a short delay
         setTimeout(async () => {
