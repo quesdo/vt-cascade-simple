@@ -751,7 +751,31 @@ function redrawAllLines() {
 }
 
 function drawStaticLine(start, end, color) {
-    // Draw line
+    // Draw line with neon effect (multiple layers)
+
+    // Outer glow (strongest)
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 12;
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.3;
+    ctx.stroke();
+
+    // Middle glow
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 8;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.6;
+    ctx.stroke();
+
+    // Core line (bright)
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
     ctx.lineTo(end.x, end.y);
@@ -759,6 +783,7 @@ function drawStaticLine(start, end, color) {
     ctx.lineWidth = 4;
     ctx.shadowBlur = 15;
     ctx.shadowColor = color;
+    ctx.globalAlpha = 1;
     ctx.stroke();
 
     // Draw arrowhead
@@ -794,7 +819,31 @@ function drawAnimatedLine(start, end, color, callback) {
         const currentX = start.x + (end.x - start.x) * progress;
         const currentY = start.y + (end.y - start.y) * progress;
 
-        // Draw animating line
+        // Draw animating line with neon effect
+
+        // Outer glow
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(currentX, currentY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 12;
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = color;
+        ctx.globalAlpha = 0.3;
+        ctx.stroke();
+
+        // Middle glow
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(currentX, currentY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 8;
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = color;
+        ctx.globalAlpha = 0.6;
+        ctx.stroke();
+
+        // Core line
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(currentX, currentY);
@@ -802,6 +851,7 @@ function drawAnimatedLine(start, end, color, callback) {
         ctx.lineWidth = 4;
         ctx.shadowBlur = 15;
         ctx.shadowColor = color;
+        ctx.globalAlpha = 1;
         ctx.stroke();
 
         // Draw arrowhead at current position

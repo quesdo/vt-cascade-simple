@@ -12,7 +12,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden;
-    background: radial-gradient(circle at center, #1a4d6b 0%, #0d2a3d 60%, #001a2e 100%);
+    background: transparent;
     min-height: 100vh;
     position: relative;
     display: flex;
