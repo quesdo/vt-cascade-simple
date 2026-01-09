@@ -140,6 +140,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ===== STARS CREATION =====
 function initStars() {
     const starsContainer = document.getElementById('stars');
+
+    // Skip if stars container doesn't exist
+    if (!starsContainer) {
+        console.log('No stars container - skipping star creation');
+        return;
+    }
+
     const starCount = 150;
 
     for (let i = 0; i < starCount; i++) {
@@ -657,6 +664,15 @@ function startAutoProgress(duration, callback) {
     const countdown = document.getElementById('countdown');
     const progressFill = document.getElementById('progressFill');
 
+    // Skip if elements don't exist
+    if (!indicator || !countdown || !progressFill) {
+        console.log('No progress indicator elements - using simple timer');
+        autoProgressTimer = setTimeout(() => {
+            callback();
+        }, duration);
+        return;
+    }
+
     // Show the indicator
     indicator.classList.add('show');
 
@@ -708,7 +724,9 @@ function stopAutoProgress() {
 
     // Hide the indicator
     const indicator = document.getElementById('autoProgressIndicator');
-    indicator.classList.remove('show');
+    if (indicator) {
+        indicator.classList.remove('show');
+    }
 }
 
 // ===== DRAWING FUNCTIONS =====
