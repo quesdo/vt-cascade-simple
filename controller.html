@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .controller-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            gap: 3rem;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .button-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #4da6ff, #1976d2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 2.5rem 5rem;
+            font-size: 2rem;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(77, 166, 255, 0.4);
+            min-width: 300px;
+            text-align: center;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(77, 166, 255, 0.6);
+            background: linear-gradient(135deg, #5ab4ff, #2196f3);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, #2e7d32, #4caf50);
+            border-color: #4caf50;
+            box-shadow: 0 6px 30px rgba(76, 175, 80, 0.6);
+        }
+
+        .status-display {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 300px;
+        }
+
+        .status-display h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            color: #4da6ff;
+        }
+
+        .status-display p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .status-display .current {
+            color: #4caf50;
+            font-weight: 600;
+            font-size: 1.3rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="controller-container">
+        <!-- Left side: Control buttons -->
+        <div class="button-panel">
+            <button class="control-btn" id="btn1" data-sol="1" data-anim="Anim1">
+                Solution 1
+            </button>
+            <button class="control-btn" id="btn2" data-sol="2" data-anim="Anim2">
+                Solution 2
+            </button>
+            <button class="control-btn" id="btn3" data-sol="3" data-anim="Anim3">
+                Solution 3
+            </button>
+        </div>
+
+        <!-- Right side: Status display -->
+        <div class="status-display">
+            <h2>Controller Status</h2>
+            <p>Click a button to show SOL and play animation</p>
+            <p class="current" id="currentStatus">Waiting...</p>
+        </div>
+    </div>
+
+    <script>
+        // Function to send messages to SDK platform
+        function sendToSDK(message) {
+            window.parent.postMessage(JSON.stringify(message), "*");
+            console.log("Sent to SDK:", message);
+        }
+
+        // Function to show SOL actor
+        function showSOL(solNumber) {
+            const message = {
+                action: "toggleVisibility",
+                actor: `SOL ${solNumber}`,
+                visible: true
+            };
+            sendToSDK(message);
+        }
+
+        // Function to play animation
+        function playAnimation(animName) {
+            const message = {
+                action: "playAnimation",
+                actor: "TOBELine",
+                animation: animName
+            };
+            sendToSDK(message);
+        }
+
+        // Function to hide all SOLs
+        function hideAllSOLs() {
+            for (let i = 1; i <= 3; i++) {
+                const message = {
+                    action: "toggleVisibility",
+                    actor: `SOL ${i}`,
+                    visible: false
+                };
+                sendToSDK(message);
+            }
+        }
+
+        // Handle button clicks
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const solNumber = btn.dataset.sol;
+                const animName = btn.dataset.anim;
+
+                // Remove active class from all buttons
+                document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+
+                // Add active class to clicked button
+                btn.classList.add('active');
+
+                // Hide all SOLs first
+                hideAllSOLs();
+
+                // Show selected SOL
+                showSOL(solNumber);
+
+                // Update status - showing SOL
+                document.getElementById('currentStatus').textContent =
+                    `Showing SOL ${solNumber} | Animation in 3s...`;
+
+                console.log(`Button ${solNumber} clicked: Show SOL ${solNumber}`);
+
+                // Wait 3 seconds before playing animation
+                setTimeout(() => {
+                    playAnimation(animName);
+
+                    // Update status - playing animation
+                    document.getElementById('currentStatus').textContent =
+                        `Showing SOL ${solNumber} | Playing ${animName}`;
+
+                    console.log(`Playing ${animName} after 3s delay`);
+                }, 3000);
+            });
+        });
+
+        console.log("Animation Controller loaded and ready");
+    </script>
+</body>
+</html>

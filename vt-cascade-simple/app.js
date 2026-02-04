@@ -135,11 +135,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log("SDK Functions loaded - ready to toggle VT visibility");
     console.log("Supabase Real-time sync enabled - User ID:", window.USER_ID);
+
+    // Auto-start a scenario after 2 seconds for testing
+    setTimeout(() => {
+        console.log("Auto-starting tarif scenario for testing");
+        startScenario('tarif');
+    }, 2000);
 });
 
 // ===== STARS CREATION =====
 function initStars() {
     const starsContainer = document.getElementById('stars');
+
+    // Skip if stars container doesn't exist
+    if (!starsContainer) {
+        console.log('No stars container - skipping star creation');
+        return;
+    }
+
     const starCount = 150;
 
     for (let i = 0; i < starCount; i++) {
@@ -285,22 +298,35 @@ function triggerStepLocal() {
     const step = currentScenario.chain[currentStep];
     const targetVT = document.getElementById(`vt-${step.vt}`);
 
-    // Find source position (button or previous VT)
+    if (!targetVT) {
+        console.error('Target VT not found:', step.vt);
+        return;
+    }
+
+    // Find source position
     let sourcePos;
     if (currentStep === 0) {
-        // From the button that was clicked
-        sourcePos = getElementCenter(clickedButton);
+        // First step - start from center of screen
+        sourcePos = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+        };
     } else {
         // From previous VT
         const prevStep = currentScenario.chain[currentStep - 1];
         const prevVT = document.getElementById(`vt-${prevStep.vt}`);
+        if (!prevVT) {
+            console.error('Previous VT not found:', prevStep.vt);
+            return;
+        }
         sourcePos = getElementCenter(prevVT);
     }
 
     const targetPos = getElementCenter(targetVT);
 
+    console.log(`Drawing line from`, sourcePos, `to`, targetPos, `for step`, currentStep);
+
     // Draw animated connection and store it
-    const lineIndex = drawnLines.length;
     const lineData = {
         start: sourcePos,
         end: targetPos,
@@ -317,10 +343,12 @@ function triggerStepLocal() {
         // SDK: Show Issue, Hide Working when problem arrives
         showIssue(step.vt);
 
-        // Auto-show message after line animation completes
-        setTimeout(() => {
-            showMessage(step.vt);
-        }, 500);
+        console.log(`Line animation completed for step ${currentStep}`);
+
+        // No popup - just continue automatically after a short delay
+        setTimeout(async () => {
+            await showResolution();
+        }, 2000);
     });
 }
 
@@ -377,58 +405,23 @@ async function showResolution() {
 
 function showResolutionLocal() {
     const step = currentScenario.chain[currentStep];
-    const popup = document.getElementById('messagePopup');
-    const icon = popup.querySelector('.message-icon');
-    const title = popup.querySelector('.message-title');
-    const content = popup.querySelector('.message-content');
-    const btn = document.getElementById('resolveBtn');
-
-    // Update to show resolution
-    icon.textContent = '✅';
-    title.textContent = 'DIGITAL TWIN RESOLVING';
-
-    // Show the solution
-    let solutionContent = '✅ SOLUTION APPLIED:\n' + step.solution;
-
-    // Add final message if it exists
-    if (step.final) {
-        solutionContent += '\n\n' + step.final;
-    }
-
-    content.textContent = solutionContent;
 
     // Mark VT as resolved
     resolveAndContinue();
 
-    // Show continue button
-    btn.style.display = 'block';
+    // No popup - continue automatically
     const isLastStep = currentStep >= currentScenario.chain.length - 1;
-    btn.textContent = isLastStep ? 'Complete Crisis Resolution ✓' : 'Continue to Next Impact →';
 
-    // Set button action and auto-progress
-    if (isLastStep) {
-        const completeAction = async () => {
-            stopAutoProgress();
-            popup.classList.remove('show');
-            setTimeout(async () => {
-                await showSuccessScreen();
-            }, 500);
-        };
-        btn.onclick = completeAction;
-        // 6 seconds to read solution (4s × 1.5)
-        startAutoProgress(6000, completeAction);
-    } else {
-        const continueAction = async () => {
-            stopAutoProgress();
-            popup.classList.remove('show');
-            await new Promise(resolve => setTimeout(resolve, 500));
+    setTimeout(async () => {
+        if (isLastStep) {
+            // End of scenario - show success briefly then reset
+            await showSuccessScreen();
+        } else {
+            // Continue to next step
             currentStep++;
             await triggerStep();
-        };
-        btn.onclick = continueAction;
-        // 6 seconds to read solution (4s × 1.5)
-        startAutoProgress(6000, continueAction);
-    }
+        }
+    }, 2000);
 }
 
 // For spectators to sync
@@ -465,17 +458,15 @@ async function showSuccessScreen() {
 }
 
 function showSuccessScreenLocal() {
-    const overlay = document.getElementById('successOverlay');
-    const message = overlay.querySelector('.success-message');
-
-    message.textContent = `All impacts resolved through Digital Twin collaboration!\n\n${currentScenario.name} successfully managed with minimal disruption.`;
-
-    overlay.classList.add('show');
-
-    // SDK: Hide "Web Cascade" and show "Web Univers" when success screen appears
+    // No overlay - just trigger SDK visibility changes and auto-reset
     toggleVisibility("Web Cascade", false);
     toggleVisibility("Web Univers", true);
-    console.log("Success screen shown - Web Cascade hidden, Web Univers displayed");
+    console.log("Success - Web Cascade hidden, Web Univers displayed");
+
+    // Auto-reset after 2 seconds
+    setTimeout(async () => {
+        await resetSystem();
+    }, 2000);
 }
 
 // For spectators to sync
@@ -491,12 +482,6 @@ async function resetSystem() {
 }
 
 function resetSystemLocal() {
-    // Clear any existing auto-progress
-    stopAutoProgress();
-
-    // Hide success overlay
-    document.getElementById('successOverlay').classList.remove('show');
-
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -685,6 +670,15 @@ function startAutoProgress(duration, callback) {
     const countdown = document.getElementById('countdown');
     const progressFill = document.getElementById('progressFill');
 
+    // Skip if elements don't exist
+    if (!indicator || !countdown || !progressFill) {
+        console.log('No progress indicator elements - using simple timer');
+        autoProgressTimer = setTimeout(() => {
+            callback();
+        }, duration);
+        return;
+    }
+
     // Show the indicator
     indicator.classList.add('show');
 
@@ -736,7 +730,9 @@ function stopAutoProgress() {
 
     // Hide the indicator
     const indicator = document.getElementById('autoProgressIndicator');
-    indicator.classList.remove('show');
+    if (indicator) {
+        indicator.classList.remove('show');
+    }
 }
 
 // ===== DRAWING FUNCTIONS =====
@@ -751,7 +747,31 @@ function redrawAllLines() {
 }
 
 function drawStaticLine(start, end, color) {
-    // Draw line
+    // Draw line with neon effect (multiple layers)
+
+    // Outer glow (strongest)
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 12;
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.3;
+    ctx.stroke();
+
+    // Middle glow
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 8;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.6;
+    ctx.stroke();
+
+    // Core line (bright)
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
     ctx.lineTo(end.x, end.y);
@@ -759,6 +779,7 @@ function drawStaticLine(start, end, color) {
     ctx.lineWidth = 4;
     ctx.shadowBlur = 15;
     ctx.shadowColor = color;
+    ctx.globalAlpha = 1;
     ctx.stroke();
 
     // Draw arrowhead
@@ -794,7 +815,31 @@ function drawAnimatedLine(start, end, color, callback) {
         const currentX = start.x + (end.x - start.x) * progress;
         const currentY = start.y + (end.y - start.y) * progress;
 
-        // Draw animating line
+        // Draw animating line with neon effect
+
+        // Outer glow
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(currentX, currentY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 12;
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = color;
+        ctx.globalAlpha = 0.3;
+        ctx.stroke();
+
+        // Middle glow
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(currentX, currentY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 8;
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = color;
+        ctx.globalAlpha = 0.6;
+        ctx.stroke();
+
+        // Core line
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(currentX, currentY);
@@ -802,6 +847,7 @@ function drawAnimatedLine(start, end, color, callback) {
         ctx.lineWidth = 4;
         ctx.shadowBlur = 15;
         ctx.shadowColor = color;
+        ctx.globalAlpha = 1;
         ctx.stroke();
 
         // Draw arrowhead at current position

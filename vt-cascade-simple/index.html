@@ -38,6 +38,32 @@
         </button>
     </div>
 
+    <!-- Message popup (hidden) -->
+    <div class="message-popup" id="messagePopup" style="display: none;">
+        <div class="message-header">
+            <span class="message-icon"></span>
+            <span class="message-title"></span>
+        </div>
+        <div class="message-content"></div>
+        <div class="auto-progress-indicator" id="autoProgressIndicator">
+            <div class="progress-text">Auto-progressing in <span id="countdown">5</span>s</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        <button class="message-btn" id="resolveBtn">Resolve with Digital Twin ✓</button>
+    </div>
+
+    <!-- Success overlay (hidden) -->
+    <div class="success-overlay" id="successOverlay" style="display: none;">
+        <div class="success-content">
+            <div class="success-icon">🎯</div>
+            <h2>Crisis Resolved!</h2>
+            <p class="success-message"></p>
+            <button class="success-btn" id="resetBtn">New Scenario</button>
+        </div>
+    </div>
+
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
