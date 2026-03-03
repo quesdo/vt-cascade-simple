@@ -125,83 +125,174 @@
         </div>
     </div>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script>
-        // Function to send messages to SDK platform
+        // ===== SESSION KEY =====
+        const sessionKey = new URLSearchParams(window.location.search).get('session') || 'default';
+
+        // ===== STATE =====
+        let supabaseClient = null;
+        let sessionId = null;
+        let isLocalAction = false;
+        let animTimer = null;
+
+        // ===== SDK COMMUNICATION =====
         function sendToSDK(message) {
             window.parent.postMessage(JSON.stringify(message), "*");
             console.log("Sent to SDK:", message);
         }
 
-        // Function to show SOL actor
         function showSOL(solNumber) {
-            const message = {
-                action: "toggleVisibility",
-                actor: `SOL ${solNumber}`,
-                visible: true
-            };
-            sendToSDK(message);
+            sendToSDK({ action: "toggleVisibility", actor: `SOL ${solNumber}`, visible: true });
         }
 
-        // Function to play animation
         function playAnimation(animName) {
-            const message = {
-                action: "playAnimation",
-                actor: "TOBELine",
-                animation: animName
-            };
-            sendToSDK(message);
+            sendToSDK({ action: "playAnimation", actor: "TOBELine", animation: animName });
         }
 
-        // Function to hide all SOLs
         function hideAllSOLs() {
             for (let i = 1; i <= 3; i++) {
-                const message = {
-                    action: "toggleVisibility",
-                    actor: `SOL ${i}`,
-                    visible: false
-                };
-                sendToSDK(message);
+                sendToSDK({ action: "toggleVisibility", actor: `SOL ${i}`, visible: false });
             }
         }
 
-        // Handle button clicks
+        // ===== UI =====
+        function activateButton(solNumber) {
+            document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`[data-sol="${solNumber}"]`);
+            if (btn) btn.classList.add('active');
+        }
+
+        function setStatus(text) {
+            document.getElementById('currentStatus').textContent = text;
+        }
+
+        // ===== EXECUTE SOL ACTION =====
+        function executeSOLAction(solNumber, animName) {
+            activateButton(solNumber);
+            hideAllSOLs();
+            showSOL(solNumber);
+            setStatus(`Showing SOL ${solNumber} | Animation in 3s...`);
+
+            if (animTimer) clearTimeout(animTimer);
+            animTimer = setTimeout(() => {
+                playAnimation(animName);
+                setStatus(`Showing SOL ${solNumber} | Playing ${animName}`);
+                console.log(`Playing ${animName} after 3s delay`);
+            }, 3000);
+        }
+
+        // ===== SUPABASE =====
+        async function initSupabase() {
+            try {
+                const { createClient } = supabase;
+                supabaseClient = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+                // Find existing row for this session_key
+                let { data, error } = await supabaseClient
+                    .from('controller_session')
+                    .select('*')
+                    .eq('session_key', sessionKey)
+                    .single();
+
+                if (error || !data) {
+                    // Create row for this session_key
+                    const insert = await supabaseClient
+                        .from('controller_session')
+                        .insert({ session_key: sessionKey, action_counter: 0 })
+                        .select()
+                        .single();
+                    if (insert.error) {
+                        console.error('Error creating session row:', insert.error);
+                        return;
+                    }
+                    data = insert.data;
+                }
+
+                sessionId = data.id;
+                console.log('Connected to controller_session:', sessionId, 'session_key:', sessionKey);
+
+                // Subscribe to real-time changes for this row
+                supabaseClient
+                    .channel('controller_changes')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'controller_session',
+                            filter: `id=eq.${sessionId}`
+                        },
+                        handleSessionUpdate
+                    )
+                    .subscribe();
+
+                console.log('Real-time subscription active');
+            } catch (err) {
+                console.error('Supabase initialization error:', err);
+            }
+        }
+
+        async function updateSession(solNumber, animName) {
+            if (!supabaseClient || !sessionId) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('controller_session')
+                    .update({
+                        last_sol: parseInt(solNumber),
+                        last_anim: animName,
+                        action_counter: Date.now()
+                    })
+                    .eq('id', sessionId);
+
+                if (error) {
+                    console.error('Error updating session:', error);
+                } else {
+                    console.log('Session updated: SOL', solNumber, animName);
+                }
+            } catch (err) {
+                console.error('Update error:', err);
+            }
+        }
+
+        function handleSessionUpdate(payload) {
+            if (isLocalAction) {
+                isLocalAction = false;
+                return;
+            }
+
+            const data = payload.new;
+            console.log('Received update from remote:', data);
+
+            if (data.last_sol && data.last_anim) {
+                executeSOLAction(data.last_sol, data.last_anim);
+            }
+        }
+
+        // ===== BUTTON CLICKS =====
         document.querySelectorAll('.control-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const solNumber = btn.dataset.sol;
                 const animName = btn.dataset.anim;
 
-                // Remove active class from all buttons
-                document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
-
-                // Add active class to clicked button
-                btn.classList.add('active');
-
-                // Hide all SOLs first
-                hideAllSOLs();
-
-                // Show selected SOL
-                showSOL(solNumber);
-
-                // Update status - showing SOL
-                document.getElementById('currentStatus').textContent =
-                    `Showing SOL ${solNumber} | Animation in 3s...`;
-
+                // Execute locally
+                executeSOLAction(solNumber, animName);
                 console.log(`Button ${solNumber} clicked: Show SOL ${solNumber}`);
 
-                // Wait 3 seconds before playing animation
-                setTimeout(() => {
-                    playAnimation(animName);
-
-                    // Update status - playing animation
-                    document.getElementById('currentStatus').textContent =
-                        `Showing SOL ${solNumber} | Playing ${animName}`;
-
-                    console.log(`Playing ${animName} after 3s delay`);
-                }, 3000);
+                // Sync to Supabase
+                isLocalAction = true;
+                updateSession(solNumber, animName);
             });
         });
 
-        console.log("Animation Controller loaded and ready");
+        // ===== INIT =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initSupabase();
+            console.log("Animation Controller loaded and ready - session:", sessionKey);
+        });
     </script>
 </body>
 </html>
